@@ -1,28 +1,8 @@
-import React, { useState } from 'react';
-import Board from './Board';
+import { useState } from 'react';
 
-function App() {
+const useBoardState = () => {
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [selectedPiece, setSelectedPiece] = useState(null);
-
-  const onSquareClick = (squareKey, piece) => {
-    if (!selectedPiece) {
-      setSelectedPiece(piece);
-      setSelectedSquare(squareKey);
-    } else {
-      // move piece to new square
-      const newPieces = pieces.map(p => {
-        if (p === selectedPiece) {
-          return { ...p, position: squareKey };
-        }
-        return p;
-      });
-      setPieces(newPieces);
-      setSelectedPiece(null);
-      setSelectedSquare(null);
-    }
-  };
-
   const [pieces, setPieces] = useState([
     { type: 'P', position: '6,0' },
     { type: 'P', position: '6,1' },
@@ -57,38 +37,24 @@ function App() {
     { type: 'n', position: '0,6' },
     { type: 'r', position: '0,7' },
   ]);
-  
-  
 
-  return (
-    <div>
-      <Board onSquareClick={onSquareClick} pieces={pieces} />
-      {selectedSquare ? <p>Selected Square: {selectedSquare}</p> : null}
-    </div>
-  );
-}
+  const onSquareClick = (squareKey, piece) => {
+    if (!selectedPiece) {
+      setSelectedPiece(piece);
+      setSelectedSquare(squareKey);
+    } else {
+      // move piece to new square
+      const newPieces = pieces.map(p => {
+        if (p === selectedPiece) {
+          return { ...p, position: squareKey };
+        }
+        return p;
+      });
+      setPieces(newPieces);
+      setSelectedPiece(null);
+      setSelectedSquare(null);
+    }
+    };
+};
 
-export default App;
-
-
-// import React from 'react';
-// import Board from './Board';
-// import useBoardState from './useBoardState';
-
-// function App() {
-//   const {
-//   selectedSquare,
-//   selectedPiece,
-//   pieces,
-//   onSquareClick
-//   } = useBoardState();
-
-// return (
-//   <div>
-//     <Board onSquareClick={onSquareClick} pieces={pieces} />
-//     {selectedSquare ? <p>Selected Square: {selectedSquare}</p> : null}
-//   </div>
-//   );
-// }
-
-// export default App;
+export default useBoardState;
