@@ -1,22 +1,35 @@
 import React from 'react';
 
 const BoardSquare = ({ color, squareKey, onClick, piece }) => {
-    return (
+  return (
+    <div
+      style={{
+        width: '50px',
+        height: '50px',
+        backgroundColor: color,
+        display: 'inline-block',
+        position: 'relative'
+      }}
+      onClick={onClick}
+    >
+      {piece ? (
         <div
-        style={{
-            width: '50px',
-            height: '50px',
-            backgroundColor: color,
-            display: 'inline-block',
-            color: 'red',
+          style={{
+            position: 'absolute',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '100%',
             textAlign: 'center',
-            lineHeight: '50px'
-        }}
-        onClick={onClick}
+            lineHeight: '50px',
+            color: 'red'
+          }}
         >
-        {piece ? piece.type : null}
+          {piece.type}
         </div>
-    );
+      ) : null}
+    </div>
+  );
 };
 
 export default BoardSquare;
