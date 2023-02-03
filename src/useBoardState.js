@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { getPawnMoves } from './legalMovesCalculations';
 
 export default function useBoardState() {
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [selectedPiece, setSelectedPiece] = useState(null);
   const [turn, setTurn] = useState('white');
+  const [legalMoves, setLegalMoves] = useState([]);
 
   const onSquareClick = (squareKey, piece) => {
     if (!selectedPiece) {
@@ -13,66 +15,33 @@ export default function useBoardState() {
       setSelectedPiece(piece);
       setSelectedSquare(squareKey);
       if(piece.type == "P" || piece.type == "p"){
-        var moves = getPawnMoves(piece);
-        console.log(moves);
+        setLegalMoves(getPawnMoves(piece, pieces));
       }
     } else {
-      // move piece to new square
-      const newPieces = pieces.map(p => {
-        if (p === selectedPiece) {
-          return { ...p, position: squareKey };
-        }
-        return p;
-      });
-      setPieces(newPieces);
-      setSelectedPiece(null);
-      setSelectedSquare(null);
-      setTurn(turn === 'white' ? 'black' : 'white');
-    }
-  };
-
-  const getPawnMoves = (selectedPiece) => {
-    const position = selectedPiece.position;
-    const [row, col] = position.split(',').map(num => parseInt(num, 10));
-    const moves = [];
-  
-    const direction = selectedPiece.color === 'white' ? 1 : -1;
-    const nextRow = row + direction;
-  
-    // move one square forward
-    if (!getPieceAt(`${nextRow},${col}`)) {
-      moves.push(`${nextRow},${col}`);
-    }
-  
-    // move two squares forward from starting position
-    if ((selectedPiece.color === 'white' && row === 1) || (selectedPiece.color === 'black' && row === 6)) {
-      const secondRow = row + 2 * direction;
-      if (!getPieceAt(`${secondRow},${col}`)) {
-        moves.push(`${secondRow},${col}`);
+      // check if move is legal
+      if (legalMoves.includes(squareKey)) {
+        // move piece to new square
+        const newPieces = pieces.map(p => {
+          if (p === selectedPiece) {
+            return { ...p, position: squareKey };
+          }
+          return p;
+        });
+        setPieces(newPieces);
+        setSelectedPiece(null);
+        setSelectedSquare(null);
+        setTurn(turn === 'white' ? 'black' : 'white');
+        setLegalMoves([]);
+      }
+      else{
+        // not legal move
+        setSelectedPiece(null);
+        setSelectedSquare(null);
+        setLegalMoves([]);
       }
     }
-  
-    // capture diagonally
-    const captureMoves = [[nextRow, col + 1], [nextRow, col - 1]].filter(([r, c]) => {
-      return r >= 0 && r <= 7 && c >= 0 && c <= 7;
-    });
-    captureMoves.forEach(([r, c]) => {
-      const capturedPiece = getPieceAt(`${r},${c}`);
-      if (capturedPiece && capturedPiece.color !== selectedPiece.color) {
-        moves.push(`${r},${c}`);
-      }
-    });
-  
-    return moves;
   };
   
-  const getPieceAt = (position) => {
-    return pieces.find(piece => piece.position === position);
-  };
-  
-
-  
-
   const [pieces, setPieces] = useState([
     { type: 'P', color: 'black', position: '6,0' },
     { type: 'P', color: 'black', position: '6,1' },
@@ -114,7 +83,7 @@ export default function useBoardState() {
     selectedPiece,
     pieces,
     turn,
-    getPawnMoves,
+    legalMoves,
     onSquareClick,
   };
 }
