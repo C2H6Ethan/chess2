@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { getMovesForPiece, getSquaresBetween } from "./legalMovesCalculations";
+import { getMovesForPiece } from "./legalMovesCalculations";
 
 export default function useBoardState() {
   const [selectedSquare, setSelectedSquare] = useState(null);
@@ -8,8 +8,6 @@ export default function useBoardState() {
   const [legalMoves, setLegalMoves] = useState([]);
 
   const onSquareClick = (squareKey, piece) => {
-    const test = getSquaresBetween("0,0", squareKey);
-    console.log(`squares between: ${test}`);
     if (!selectedPiece) {
       if (!piece || piece.color !== turn) {
         return;

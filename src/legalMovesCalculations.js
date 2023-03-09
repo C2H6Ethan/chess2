@@ -270,36 +270,45 @@ const getKingMoves = (position, color, pieces) => {
   const [row, col] = position.split(",").map((num) => parseInt(num, 10));
   const moves = [];
 
-  // check for castling
-  
-  if (selectedPiece.moveCount === 0 && !isSquareUnderAttack(position, pieces)) {
-    // check for king-side castling
-    const rook = getPieceAt(`${row},${7}`, pieces);
-    if (rook && rook.moveCount === 0) {
-      const squaresBetween = getSquaresBetween(`${row},${col}`, `${row},${7}`);
-      if (
-        squaresBetween.length === 0 &&
-        !isSquareUnderAttack(`${row},${col + 1}`, pieces) &&
-        !isSquareUnderAttack(`${row},${col + 2}`, pieces)
-      ) {
-        moves.push(`${row},${col + 2}`);
+  const king = getPieceAt(position);
+  console.log("king:", king);
+  if (king && king.type == "k" && king.color == color) {
+    // check for castling
+    if (king.moveCount === 0 && !isSquareUnderAttack(position, pieces)) {
+      // check for king-side castling
+      const rook = getPieceAt(`${row},${7}`, pieces);
+      if (rook && rook.moveCount === 0) {
+        const squaresBetween = getSquaresBetween(
+          `${row},${col}`,
+          `${row},${7}`
+        );
+        if (
+          squaresBetween.length === 0 &&
+          !isSquareUnderAttack(`${row},${col + 1}`, color, pieces) &&
+          !isSquareUnderAttack(`${row},${col + 2}`, color, pieces)
+        ) {
+          moves.push(`${row},${col + 2}`);
+        }
       }
-    }
 
-  //   // check for queen-side castling
-  //   const queenRook = getPieceAt(`${row},${0}`, pieces);
-  //   if (queenRook && queenRook.moveCount === 0) {
-  //     const squaresBetween = getSquaresBetween(`${row},${col}`, `${row},${0}`);
-  //     if (
-  //       squaresBetween.length === 0 &&
-  //       !isSquareUnderAttack(`${row},${col - 1}`, pieces) &&
-  //       !isSquareUnderAttack(`${row},${col - 2}`, pieces) &&
-  //       !isSquareUnderAttack(`${row},${col - 3}`, pieces)
-  //     ) {
-  //       moves.push(`${row},${col - 2}`);
-  //     }
-  //   }
-  // }
+      // // check for queen-side castling
+      // const queenRook = getPieceAt(`${row},${0}`, pieces);
+      // if (queenRook && queenRook.moveCount === 0) {
+      //   const squaresBetween = getSquaresBetween(
+      //     `${row},${col}`,
+      //     `${row},${0}`
+      //   );
+      //   if (
+      //     squaresBetween.length === 0 &&
+      //     !isSquareUnderAttack(`${row},${col - 1}`, pieces) &&
+      //     !isSquareUnderAttack(`${row},${col - 2}`, pieces) &&
+      //     !isSquareUnderAttack(`${row},${col - 3}`, pieces)
+      //   ) {
+      //     moves.push(`${row},${col - 2}`);
+      //   }
+      // }
+    }
+  }
 
   // check for regular moves
   for (let i = row - 1; i <= row + 1; i++) {
