@@ -1,9 +1,7 @@
 import React, { useState } from "react";
-import {
-  getMovesForPiece,
-  getMovesThatStopCheck,
-  isCheck,
-} from "./legalMovesCalculations";
+import { getMovesForPiece } from "./utils/getMovesForPiece";
+import { getMovesThatStopCheck } from "./utils/getMovesThatStopCheck";
+import { isCheck } from "./utils/isCheck";
 
 export default function useBoardState() {
   const [selectedSquare, setSelectedSquare] = useState(null);

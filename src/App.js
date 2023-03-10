@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Board from "./Board";
 import useBoardState from "./useBoardState";
 import WinnerModal from "./components/winnerModal";
-import { isCheckmate } from "./legalMovesCalculations";
+import { isCheckmate } from "./utils/isCheckmate";
 
 function App() {
   const [isRGBMode, setIsRGBMode] = useState(false);
