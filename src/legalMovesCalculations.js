@@ -270,43 +270,67 @@ const getKingMoves = (position, color, pieces) => {
   const [row, col] = position.split(",").map((num) => parseInt(num, 10));
   const moves = [];
 
-  const king = getPieceAt(position);
-  console.log("king:", king);
+  const king = getPieceAt(position, pieces);
   if (king && king.type == "k" && king.color == color) {
-    // check for castling
-    if (king.moveCount === 0 && !isSquareUnderAttack(position, pieces)) {
-      // check for king-side castling
-      const rook = getPieceAt(`${row},${7}`, pieces);
-      if (rook && rook.moveCount === 0) {
-        const squaresBetween = getSquaresBetween(
-          `${row},${col}`,
-          `${row},${7}`
-        );
-        if (
-          squaresBetween.length === 0 &&
-          !isSquareUnderAttack(`${row},${col + 1}`, color, pieces) &&
-          !isSquareUnderAttack(`${row},${col + 2}`, color, pieces)
-        ) {
-          moves.push(`${row},${col + 2}`);
+    const kingSideRook = getPieceAt(`${row},7`, pieces);
+    const queenSideRook = getPieceAt(`${row},0`, pieces);
+
+    // check for king side castling
+    if (
+      kingSideRook &&
+      kingSideRook.type == "r" &&
+      kingSideRook.color == color
+    ) {
+      // check if king and rook haven't moved
+      if (king.moveCount === 0 && kingSideRook.moveCount === 0) {
+        // check if the king is not currently in check
+        if (!isCheck(pieces, color)) {
+          // check if there are no pieces in between and the king does not pass through or finish on a square that is attacked by an enemy piece.
+          const squaresBetween = getSquaresBetween(
+            king.position,
+            kingSideRook.position
+          );
+          const hasPiecesInBetween = squaresBetween.some((square) =>
+            getPieceAt(square, pieces)
+          );
+          const isBeingAttacked = squaresBetween.some((square) =>
+            isSquareUnderAttack(square, color, pieces)
+          );
+          if (!hasPiecesInBetween && !isBeingAttacked) {
+            moves.push(`${row},6`);
+          }
         }
       }
+    }
 
-      // // check for queen-side castling
-      // const queenRook = getPieceAt(`${row},${0}`, pieces);
-      // if (queenRook && queenRook.moveCount === 0) {
-      //   const squaresBetween = getSquaresBetween(
-      //     `${row},${col}`,
-      //     `${row},${0}`
-      //   );
-      //   if (
-      //     squaresBetween.length === 0 &&
-      //     !isSquareUnderAttack(`${row},${col - 1}`, pieces) &&
-      //     !isSquareUnderAttack(`${row},${col - 2}`, pieces) &&
-      //     !isSquareUnderAttack(`${row},${col - 3}`, pieces)
-      //   ) {
-      //     moves.push(`${row},${col - 2}`);
-      //   }
-      // }
+    // check for queen side castling
+    if (
+      queenSideRook &&
+      queenSideRook.type == "r" &&
+      queenSideRook.color == color
+    ) {
+      // check if king and rook haven't moved
+      if (king.moveCount === 0 && queenSideRook.moveCount === 0) {
+        // check if the king is not currently in check
+        if (!isCheck(pieces, color)) {
+          // check if there are no pieces in between and the king does not pass through or finish on a square that is attacked by an enemy piece.
+          const squaresBetween = getSquaresBetween(
+            king.position,
+            queenSideRook.position
+          );
+          const hasPiecesInBetween = squaresBetween.some((square) =>
+            getPieceAt(square, pieces)
+          );
+          // only check the squares the king is traveling through
+          const isBeingAttacked = squaresBetween
+            .slice(0, -1)
+            .some((square) => isSquareUnderAttack(square, color, pieces));
+
+          if (!hasPiecesInBetween && !isBeingAttacked) {
+            moves.push(`${row},2`);
+          }
+        }
+      }
     }
   }
 
@@ -433,7 +457,9 @@ const getSquareColor = (position) => {
 export const isCheck = (pieces, kingColor) => {
   const enemyColor = kingColor === "white" ? "black" : "white";
   const kingPos = findKing(pieces, kingColor);
-  const enemyPieces = pieces.filter((piece) => piece.color === enemyColor);
+  const enemyPieces = pieces.filter(
+    (piece) => piece.color === enemyColor && piece.type !== "k"
+  );
 
   for (const enemyPiece of enemyPieces) {
     const enemyMoves = getMovesForPiece(enemyPiece, pieces);

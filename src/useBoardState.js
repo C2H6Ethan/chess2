@@ -33,6 +33,47 @@ export default function useBoardState() {
           newPieces = newPieces.filter((p) => p !== piece);
         }
 
+        // check if it was a castle move and move rook accordingly
+        if (selectedPiece.type === "k") {
+          if (selectedPiece.color === "w") {
+            if (squareKey === "7,2") {
+              // queenside castle
+              newPieces = newPieces.map((p) => {
+                if (p.type === "r" && p.color === "w" && p.position === "7,0") {
+                  return { ...p, position: "7,3" };
+                }
+                return p;
+              });
+            } else if (squareKey === "7,6") {
+              // kingside castle
+              newPieces = newPieces.map((p) => {
+                if (p.type === "r" && p.color === "w" && p.position === "7,7") {
+                  return { ...p, position: "7,5" };
+                }
+                return p;
+              });
+            }
+          } else if (selectedPiece.color === "b") {
+            if (squareKey === "0,2") {
+              // queenside castle
+              newPieces = newPieces.map((p) => {
+                if (p.type === "r" && p.color === "b" && p.position === "0,0") {
+                  return { ...p, position: "0,3" };
+                }
+                return p;
+              });
+            } else if (squareKey === "0,6") {
+              // kingside castle
+              newPieces = newPieces.map((p) => {
+                if (p.type === "r" && p.color === "b" && p.position === "0,7") {
+                  return { ...p, position: "0,5" };
+                }
+                return p;
+              });
+            }
+          }
+        }
+
         setPieces(newPieces);
         setSelectedPiece(null);
         setSelectedSquare(null);
