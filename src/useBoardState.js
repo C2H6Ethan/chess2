@@ -1,5 +1,9 @@
 import React, { useState } from "react";
-import { getMovesForPiece } from "./legalMovesCalculations";
+import {
+  getMovesForPiece,
+  getMovesThatStopCheck,
+  isCheck,
+} from "./legalMovesCalculations";
 
 export default function useBoardState() {
   const [selectedSquare, setSelectedSquare] = useState(null);
@@ -15,7 +19,13 @@ export default function useBoardState() {
       setSelectedPiece(piece);
       setSelectedSquare(squareKey);
       // calculate legal moves
-      setLegalMoves(getMovesForPiece(piece, pieces));
+
+      // if king is in check, only allow moves that stop check
+      if (isCheck(pieces, turn)) {
+        setLegalMoves(getMovesThatStopCheck(piece, pieces));
+      } else {
+        setLegalMoves(getMovesForPiece(piece, pieces));
+      }
     } else {
       // check if move is legal
       if (legalMoves.includes(squareKey)) {
@@ -35,42 +45,67 @@ export default function useBoardState() {
 
         // check if it was a castle move and move rook accordingly
         if (selectedPiece.type === "k") {
-          if (selectedPiece.color === "w") {
-            if (squareKey === "7,2") {
-              // queenside castle
-              newPieces = newPieces.map((p) => {
-                if (p.type === "r" && p.color === "w" && p.position === "7,0") {
-                  return { ...p, position: "7,3" };
-                }
-                return p;
-              });
-            } else if (squareKey === "7,6") {
-              // kingside castle
-              newPieces = newPieces.map((p) => {
-                if (p.type === "r" && p.color === "w" && p.position === "7,7") {
-                  return { ...p, position: "7,5" };
-                }
-                return p;
-              });
-            }
-          } else if (selectedPiece.color === "b") {
-            if (squareKey === "0,2") {
-              // queenside castle
-              newPieces = newPieces.map((p) => {
-                if (p.type === "r" && p.color === "b" && p.position === "0,0") {
-                  return { ...p, position: "0,3" };
-                }
-                return p;
-              });
-            } else if (squareKey === "0,6") {
-              // kingside castle
-              newPieces = newPieces.map((p) => {
-                if (p.type === "r" && p.color === "b" && p.position === "0,7") {
-                  return { ...p, position: "0,5" };
-                }
-                return p;
-              });
-            }
+          const [row] = selectedPiece.position
+            .split(",")
+            .map((num) => parseInt(num, 10));
+          if (squareKey === `${row},2`) {
+            // queenside castle
+            newPieces = newPieces.map((p) => {
+              if (
+                p.type === "r" &&
+                p.color === selectedPiece.color &&
+                p.position === `${row},0`
+              ) {
+                return { ...p, position: `${row},3` };
+              }
+              return p;
+            });
+          } else if (squareKey === `${row},6`) {
+            // kingside castle
+            newPieces = newPieces.map((p) => {
+              if (
+                p.type === "r" &&
+                p.color === selectedPiece.color &&
+                p.position === `${row},7`
+              ) {
+                return { ...p, position: `${row},5` };
+              }
+              return p;
+            });
+          }
+        }
+
+        // check if it was a en passant move and capture pawn accordingly
+        if (selectedPiece.type === "p") {
+          const [row, col] = selectedPiece.position
+            .split(",")
+            .map((num) => parseInt(num, 10));
+          const [newRow, newCol] = squareKey
+            .split(",")
+            .map((num) => parseInt(num, 10));
+          if (Math.abs(newCol - col) === 1 && Math.abs(newRow - row) === 1) {
+            // get the pawn behind the selected square and remove it
+            const pawnBehindSquare = newPieces.find(
+              (p) =>
+                p.type === "p" &&
+                p.color !== selectedPiece.color &&
+                p.position === `${row},${newCol}`
+            );
+            newPieces = newPieces.filter((p) => p !== pawnBehindSquare);
+          }
+        }
+
+        // check if it was a promotion move and promote pawn accordingly
+        if (selectedPiece.type === "p") {
+          const [row] = squareKey.split(",").map((num) => parseInt(num, 10));
+          if (row === 0 || row === 7) {
+            // promote pawn
+            newPieces = newPieces.map((p) => {
+              if (p.color === selectedPiece.color && p.position === squareKey) {
+                return { ...p, type: "q" };
+              }
+              return p;
+            });
           }
         }
 
@@ -89,6 +124,22 @@ export default function useBoardState() {
   };
 
   const [pieces, setPieces] = useState([
+    { type: "r", color: "white", position: "0,0", moveCount: 0 },
+    { type: "n", color: "white", position: "0,1", moveCount: 0 },
+    { type: "b", color: "white", position: "0,2", moveCount: 0 },
+    { type: "q", color: "white", position: "0,3", moveCount: 0 },
+    { type: "k", color: "white", position: "0,4", moveCount: 0 },
+    { type: "b", color: "white", position: "0,5", moveCount: 0 },
+    { type: "n", color: "white", position: "0,6", moveCount: 0 },
+    { type: "r", color: "white", position: "0,7", moveCount: 0 },
+    { type: "p", color: "white", position: "1,0", moveCount: 0 },
+    { type: "p", color: "white", position: "1,1", moveCount: 0 },
+    { type: "p", color: "white", position: "1,2", moveCount: 0 },
+    { type: "p", color: "white", position: "1,3", moveCount: 0 },
+    { type: "p", color: "white", position: "1,4", moveCount: 0 },
+    { type: "p", color: "white", position: "1,5", moveCount: 0 },
+    { type: "p", color: "white", position: "1,6", moveCount: 0 },
+    { type: "p", color: "white", position: "1,7", moveCount: 0 },
     { type: "p", color: "black", position: "6,0", moveCount: 0 },
     { type: "p", color: "black", position: "6,1", moveCount: 0 },
     { type: "p", color: "black", position: "6,2", moveCount: 0 },
@@ -105,22 +156,6 @@ export default function useBoardState() {
     { type: "b", color: "black", position: "7,5", moveCount: 0 },
     { type: "n", color: "black", position: "7,6", moveCount: 0 },
     { type: "r", color: "black", position: "7,7", moveCount: 0 },
-    { type: "p", color: "white", position: "1,0", moveCount: 0 },
-    { type: "p", color: "white", position: "1,1", moveCount: 0 },
-    { type: "p", color: "white", position: "1,2", moveCount: 0 },
-    { type: "p", color: "white", position: "1,3", moveCount: 0 },
-    { type: "p", color: "white", position: "1,4", moveCount: 0 },
-    { type: "p", color: "white", position: "1,5", moveCount: 0 },
-    { type: "p", color: "white", position: "1,6", moveCount: 0 },
-    { type: "p", color: "white", position: "1,7", moveCount: 0 },
-    { type: "r", color: "white", position: "0,0", moveCount: 0 },
-    { type: "n", color: "white", position: "0,1", moveCount: 0 },
-    { type: "b", color: "white", position: "0,2", moveCount: 0 },
-    { type: "q", color: "white", position: "0,3", moveCount: 0 },
-    { type: "k", color: "white", position: "0,4", moveCount: 0 },
-    { type: "b", color: "white", position: "0,5", moveCount: 0 },
-    { type: "n", color: "white", position: "0,6", moveCount: 0 },
-    { type: "r", color: "white", position: "0,7", moveCount: 0 },
   ]);
 
   return {

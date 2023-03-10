@@ -32,7 +32,39 @@ const getPawnMoves = (position, color, pieces) => {
     }
   });
 
+  //add en passant moves
+  const enPassantMoves = getEnPassantMoves(position, color, pieces);
+  moves.push(...enPassantMoves);
+
   return moves;
+};
+
+const getEnPassantMoves = (position, color, pieces) => {
+  // check the pawn is in the correct row
+  const [row, col] = position.split(",").map((num) => parseInt(num, 10));
+  if ((color === "white" && row !== 4) || (color === "black" && row !== 3)) {
+    return [];
+  }
+
+  // check if there is an enemy pawn next to it that moved two squares
+  const pawns = [
+    getPieceAt(`${row},${col + 1}`, pieces),
+    getPieceAt(`${row},${col - 1}`, pieces),
+  ].filter(
+    (p) => p && p.type === "p" && p.color !== color && p.moveCount === 1
+  );
+  if (pawns.length === 0) {
+    return [];
+  }
+
+  // get the squares behind the enemy pawns
+  const direction = color === "white" ? 1 : -1;
+  const enPassantSquares = pawns.map((p) => {
+    const [r, c] = p.position.split(",").map((num) => parseInt(num, 10));
+    return `${r + direction},${c}`;
+  });
+
+  return enPassantSquares;
 };
 
 const getKnightMoves = (position, color, pieces) => {
@@ -266,7 +298,12 @@ const getQueenMoves = (position, color, pieces) => {
   return moves;
 };
 
-const getKingMoves = (position, color, pieces) => {
+const getKingMoves = (
+  position,
+  color,
+  pieces,
+  checkingIfSquareIsUnderAttack
+) => {
   const [row, col] = position.split(",").map((num) => parseInt(num, 10));
   const moves = [];
 
@@ -340,7 +377,18 @@ const getKingMoves = (position, color, pieces) => {
       if (i >= 0 && i <= 7 && j >= 0 && j <= 7) {
         const targetPiece = getPieceAt(`${i},${j}`, pieces);
         if (!targetPiece || targetPiece.color !== color) {
-          moves.push(`${i},${j}`);
+          // if checking if square is under attack, dont check isSquareUnderAttack again
+          if (checkingIfSquareIsUnderAttack) {
+            moves.push(`${i},${j}`);
+          } else {
+            // remove the king from the pieces array so the king can't avoid check by moving behind itself
+            const piecesWithoutKing = pieces.filter(
+              (piece) => piece.type !== "k"
+            );
+            if (!isSquareUnderAttack(`${i},${j}`, color, piecesWithoutKing)) {
+              moves.push(`${i},${j}`);
+            }
+          }
         }
       }
     }
@@ -395,7 +443,7 @@ const isSquareUnderAttack = (square, color, pieces) => {
   }
 
   // check for king attacks
-  const kingMoves = getKingMoves(square, color, pieces);
+  const kingMoves = getKingMoves(square, color, pieces, true);
   for (const element of kingMoves) {
     const king = getPieceAt(element, pieces);
     if (king && king.type === "k" && king.color !== color) {
@@ -406,7 +454,7 @@ const isSquareUnderAttack = (square, color, pieces) => {
   return false;
 };
 
-export const getSquaresBetween = (start, end) => {
+const getSquaresBetween = (start, end) => {
   const [startRow, startCol] = start.split(",").map((num) => parseInt(num, 10));
   const [endRow, endCol] = end.split(",").map((num) => parseInt(num, 10));
   const squares = [];
@@ -444,16 +492,6 @@ const getPieceAt = (position, pieces) => {
   return pieces.find((piece) => piece.position === position);
 };
 
-const getSquareColor = (position) => {
-  const [row, col] = position.split(",").map(Number);
-  // If the row and column add up to an even number, the square is white
-  if ((row + col) % 2 === 0) {
-    return "white";
-  } else {
-    return "black";
-  }
-};
-
 export const isCheck = (pieces, kingColor) => {
   const enemyColor = kingColor === "white" ? "black" : "white";
   const kingPos = findKing(pieces, kingColor);
@@ -473,6 +511,28 @@ export const isCheck = (pieces, kingColor) => {
   return false;
 };
 
+export const isCheckmate = (pieces) => {
+  // check if king is in check for both colors
+  const whiteKingInCheck = isCheck(pieces, "white");
+  const blackKingInCheck = isCheck(pieces, "black");
+  // if neither king is in check, return false
+  if (!whiteKingInCheck && !blackKingInCheck) {
+    return false;
+  } else {
+    // if one king is in check, check if it is checkmate
+    const kingColor = whiteKingInCheck ? "white" : "black";
+    // get all legal moves for the checked king
+    const kingPos = findKing(pieces, kingColor);
+    const kingMoves = getKingMoves(kingPos, kingColor, pieces);
+    // if kingMoves is empty, checkmate
+    if (kingMoves.length === 0) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 const findKing = (pieces, color) => {
   const king = pieces.find(
     (piece) => piece.color === color && piece.type === "k"
@@ -480,29 +540,95 @@ const findKing = (pieces, color) => {
   return king.position;
 };
 
+export const getMovesThatStopCheck = (piece, pieces) => {
+  const movesThatStopCheck = [];
+
+  // check the specified piece for moves that stop check
+  const pieceMoves = getMovesForPiece(piece, pieces);
+
+  // loop over all possible moves for the piece
+  for (const move of pieceMoves) {
+    // simulate the move and see if the opponent's king is still in check
+    const simulatedPieces = simulateMove(piece.position, move, pieces);
+    if (!isCheck(simulatedPieces, piece.color)) {
+      // if the king is not in check after the move, add it to the result
+      movesThatStopCheck.push(move);
+    }
+  }
+
+  return movesThatStopCheck;
+};
+
+const simulateMove = (from, to, pieces) => {
+  // create a copy of the pieces array
+  const newPieces = pieces.slice();
+
+  // find the piece being moved and update its position
+  const pieceIndex = newPieces.findIndex((p) => p.position === from);
+  newPieces[pieceIndex] = { ...newPieces[pieceIndex], position: to };
+
+  return newPieces;
+};
+
 export const getMovesForPiece = (selectedPiece, pieces) => {
+  let possibleMoves = [];
+  let moves = [];
+
   switch (selectedPiece.type) {
     case "p":
-      return getPawnMoves(selectedPiece.position, selectedPiece.color, pieces);
+      possibleMoves = getPawnMoves(
+        selectedPiece.position,
+        selectedPiece.color,
+        pieces
+      );
     case "n":
-      return getKnightMoves(
+      possibleMoves = getKnightMoves(
         selectedPiece.position,
         selectedPiece.color,
         pieces
       );
     case "b":
-      return getBishopMoves(
+      possibleMoves = getBishopMoves(
         selectedPiece.position,
         selectedPiece.color,
         pieces
       );
     case "r":
-      return getRookMoves(selectedPiece.position, selectedPiece.color, pieces);
+      possibleMoves = getRookMoves(
+        selectedPiece.position,
+        selectedPiece.color,
+        pieces
+      );
     case "q":
-      return getQueenMoves(selectedPiece.position, selectedPiece.color, pieces);
+      possibleMoves = getQueenMoves(
+        selectedPiece.position,
+        selectedPiece.color,
+        pieces
+      );
     case "k":
-      return getKingMoves(selectedPiece.position, selectedPiece.color, pieces);
-    default:
-      return [];
+      possibleMoves = getKingMoves(
+        selectedPiece.position,
+        selectedPiece.color,
+        pieces,
+        false
+      );
   }
+
+  // Check each move to see if it leaves the king in check
+  for (const move of possibleMoves) {
+    // Create a copy of the pieces array with the move applied
+    const newPieces = simulateMove(selectedPiece.position, move, pieces);
+
+    // Check if the move leaves the king in check
+    const kingColor = selectedPiece.color;
+    const kingPos = findKing(newPieces, kingColor);
+    const kingInCheck = isSquareUnderAttack(kingPos, kingColor, pieces);
+
+    // If the move doesn't leave the king in check, add it to the list of moves
+    if (!kingInCheck) {
+      moves.push(move);
+    }
+  }
+
+  return moves;
 };
