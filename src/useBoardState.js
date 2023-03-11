@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { getMovesForPiece } from "./utils/getMovesForPiece";
 import { getMovesThatStopCheck } from "./utils/getMovesThatStopCheck";
-import { isCheck } from "./utils/isCheck";
+import { findKing } from "./utils/findKing";
+import { isSquareUnderAttack } from "./utils/isSquareUnderAttack";
 
 export default function useBoardState() {
   const [selectedSquare, setSelectedSquare] = useState(null);
@@ -19,7 +20,8 @@ export default function useBoardState() {
       // calculate legal moves
 
       // if king is in check, only allow moves that stop check
-      if (isCheck(pieces, turn)) {
+      const kingPos = findKing(pieces, turn);
+      if (isSquareUnderAttack(kingPos, turn, pieces)) {
         setLegalMoves(getMovesThatStopCheck(piece, pieces));
       } else {
         setLegalMoves(getMovesForPiece(piece, pieces));
@@ -42,7 +44,7 @@ export default function useBoardState() {
         }
 
         // check if it was a castle move and move rook accordingly
-        if (selectedPiece.type === "k") {
+        else if (selectedPiece.type === "k") {
           const [row] = selectedPiece.position
             .split(",")
             .map((num) => parseInt(num, 10));
@@ -74,7 +76,7 @@ export default function useBoardState() {
         }
 
         // check if it was a en passant move and capture pawn accordingly
-        if (selectedPiece.type === "p") {
+        else if (selectedPiece.type === "p") {
           const [row, col] = selectedPiece.position
             .split(",")
             .map((num) => parseInt(num, 10));
@@ -90,20 +92,20 @@ export default function useBoardState() {
                 p.position === `${row},${newCol}`
             );
             newPieces = newPieces.filter((p) => p !== pawnBehindSquare);
-          }
-        }
-
-        // check if it was a promotion move and promote pawn accordingly
-        if (selectedPiece.type === "p") {
-          const [row] = squareKey.split(",").map((num) => parseInt(num, 10));
-          if (row === 0 || row === 7) {
-            // promote pawn
-            newPieces = newPieces.map((p) => {
-              if (p.color === selectedPiece.color && p.position === squareKey) {
-                return { ...p, type: "q" };
-              }
-              return p;
-            });
+          } else {
+            // check if it was a promotion move and promote pawn accordingly
+            if (newRow === 0 || newRow === 7) {
+              // promote pawn
+              newPieces = newPieces.map((p) => {
+                if (
+                  p.color === selectedPiece.color &&
+                  p.position === squareKey
+                ) {
+                  return { ...p, type: "q" };
+                }
+                return p;
+              });
+            }
           }
         }
 
@@ -120,6 +122,12 @@ export default function useBoardState() {
       }
     }
   };
+
+  // const [pieces, setPieces] = useState([
+  //   { type: "k", color: "black", position: "7,0", moveCount: 0 },
+  //   { type: "k", color: "white", position: "3,2", moveCount: 0 },
+  //   { type: "q", color: "white", position: "6,3", moveCount: 0 },
+  // ]);
 
   const [pieces, setPieces] = useState([
     { type: "r", color: "white", position: "0,0", moveCount: 0 },

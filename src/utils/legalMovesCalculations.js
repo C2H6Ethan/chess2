@@ -1,5 +1,4 @@
 import { getPieceAt } from "./getPieceAt";
-import { isCheck } from "./isCheck";
 import { isSquareUnderAttack } from "./isSquareUnderAttack";
 import { getSquaresBetween } from "./getSquaresBetween";
 
@@ -326,7 +325,10 @@ export const getKingMoves = (
       // check if king and rook haven't moved
       if (king.moveCount === 0 && kingSideRook.moveCount === 0) {
         // check if the king is not currently in check
-        if (!isCheck(pieces, color)) {
+        if (
+          !checkingIfSquareIsUnderAttack &&
+          !isSquareUnderAttack(king.position, color, pieces)
+        ) {
           // check if there are no pieces in between and the king does not pass through or finish on a square that is attacked by an enemy piece.
           const squaresBetween = getSquaresBetween(
             king.position,
@@ -354,7 +356,11 @@ export const getKingMoves = (
       // check if king and rook haven't moved
       if (king.moveCount === 0 && queenSideRook.moveCount === 0) {
         // check if the king is not currently in check
-        if (!isCheck(pieces, color)) {
+        // if checking if square is under attack, dont check isSquareUnderAttack again
+        if (
+          !checkingIfSquareIsUnderAttack &&
+          !isSquareUnderAttack(king.position, color, pieces)
+        ) {
           // check if there are no pieces in between and the king does not pass through or finish on a square that is attacked by an enemy piece.
           const squaresBetween = getSquaresBetween(
             king.position,

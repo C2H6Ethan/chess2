@@ -1,6 +1,7 @@
 import { getMovesForPiece } from "./getMovesForPiece";
 import { simulateMove } from "./simulateMove";
-import { isCheck } from "./isCheck";
+import { findKing } from "./findKing";
+import { isSquareUnderAttack } from "./isSquareUnderAttack";
 
 export const getMovesThatStopCheck = (piece, pieces) => {
   const movesThatStopCheck = [];
@@ -12,7 +13,9 @@ export const getMovesThatStopCheck = (piece, pieces) => {
   for (const move of pieceMoves) {
     // simulate the move and see if the opponent's king is still in check
     const simulatedPieces = simulateMove(piece.position, move, pieces);
-    if (!isCheck(simulatedPieces, piece.color)) {
+
+    const kingPos = findKing(simulatedPieces, piece.color);
+    if (!isSquareUnderAttack(kingPos, piece.color, simulatedPieces)) {
       // if the king is not in check after the move, add it to the result
       movesThatStopCheck.push(move);
     }
